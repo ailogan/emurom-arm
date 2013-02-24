@@ -1,0 +1,51 @@
+Stellaris Launchpad pin layout for the emurom project.
+
+| port | pin   | Atari | Use? | notes                                                                                 |
+| PA0  |       |       |      | U0RX for virtual COM port                                                             |
+| PA1  |       |       |      | U0TX for virtual COM port                                                             |
+| PA2  | J2.10 | A0    |      |                                                                                       |
+| PA3  | J2.9  | A1    |      |                                                                                       |
+| PA4  | J2.8  | A2    |      |                                                                                       |
+| PA5  | J1.8  | A3    |      |                                                                                       |
+| PA6  | J1.9  | A4    |      |                                                                                       |
+| PA7  | J1.10 | A5    |      |                                                                                       |
+| PB0  | J1.3  | D0    |      | ---NOT 5V TOLERANT---                                                                 |
+| PB1  | J1.4  | D1    |      | ---NOT 5V TOLERANT---                                                                 |
+| PB2  | J2.2  | D2    |      |                                                                                       |
+| PB3  | J4.3  | D3    |      |                                                                                       |
+| PB4  | J1.7  | D4    |      |                                                                                       |
+| PB5  | J1.2  | D5    |      |                                                                                       |
+| PB6  | J2.7  | D6    |      | Tied to PD0.  What the hell TI.                                                       |
+| PB7  | J2.6  | D7    |      | Tied to PD1.                                                                          |
+| PC0  |       |       |      | TCK/SWCLK for ICDI                                                                    |
+| PC1  |       |       |      | TMS/SWDIO for ICDI                                                                    |
+| PC2  |       |       |      | TCD       for ICDI                                                                    |
+| PC3  |       |       |      | TDO/SWO   for ICDI                                                                    |
+| PC4  | J4.4  | A12   |      |                                                                                       |
+| PC5  | J4.5  |       |      |                                                                                       |
+| PC6  | J4.6  |       |      |                                                                                       |
+| PC7  | J4.7  |       |      |                                                                                       |
+| PD0  | J3.3  | ---   |      | Tied to PB6                                                                           |
+| PD1  | J3.4  | ---   |      | Tied to PB7                                                                           |
+| PD2  | J3.5  |       |      |                                                                                       |
+| PD3  | J3.6  |       |      |                                                                                       |
+| PD4  |       |       |      | ---NOT 5V TOLERANT--- USB0DM (USB D-)                                                 |
+| PD5  |       |       |      | ---NOT 5V TOLERANT--- USB0DP (USB D+)                                                 |
+| PD6  | J4.8  |       |      |                                                                                       |
+| PD7  | J4.9  |       | No   | Used for VBUS detection when configured as a self-powered USB device.  NMI by default |
+| PE0  | J2.3  | A6    |      |                                                                                       |
+| PE1  | J3.7  | A7    |      |                                                                                       |
+| PE2  | J3.8  | A8    |      |                                                                                       |
+| PE3  | J3.9  | A9    |      |                                                                                       |
+| PE4  | J1.5  | A10   |      |                                                                                       |
+| PE5  | J1.6  | A11   |      |                                                                                       |
+| PE6  |       |       |      | Doesn't exist                                                                         |
+| PE7  |       |       |      | Doesn't exist                                                                         |
+| PF0  | J2.4  |       | No   | Switch 2.  NMI by default.  Seems to be tied to /WAKE                                 |
+| PF1  | J3.10 |       | No   | Red LED                                                                               |
+| PF2  | J4.1  |       | No   | Blue LED                                                                              |
+| PF3  | J4.2  |       | No   | Green LED                                                                             |
+| PF4  | J4.10 |       | No   | Switch 1                                                                              |
+| PF5  |       |       |      | Doesn't exist                                                                         |
+| PF6  |       |       |      | Doesn't exist                                                                         |
+| PF7  |       |       |      | Doesn't exist                                                                         |
