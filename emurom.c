@@ -45,6 +45,12 @@
   --1- --2- --3- --4- --5- --6- --7- --8- --9- -10- -11- -12-
    GND  D2   D1   D0   A0   A1   A2   A3   A4   A5   A6   A7
                           Bottom
+
+  TODO:
+    - The A0 version of this chip has serious problems at speed.  Check the H/W revision.
+    - Switching clocks imposes a significant delay, but apparently we can't avoid this if we want to use the PLL.
+
+    - 
 */
 
 #include "inc/hw_types.h"
@@ -147,10 +153,12 @@ void blink_long(long addr){
 
 long get_addr(){
   //Read the address on the input lines
-  long addr_low  = GPIOPinRead(GPIO_PORTA_BASE, A0|A1|A2|A3|A4 |A5 ); //PORT2-PORT7
+  //  long a12_state = GPIOPinRead(GPIO_PORTC_BASE, A12);  //PORT4
   long addr_high = GPIOPinRead(GPIO_PORTE_BASE, A6|A7|A8|A9|A10|A11); //PORT0-PORT5
+  long addr_low  = GPIOPinRead(GPIO_PORTA_BASE, A0|A1|A2|A3|A4 |A5 ); //PORT2-PORT7
   
   //Put it together into an address
+  //  long addr = ((a12_state & 0x08) << 12) | ((addr_high & 0x1F ) << 6) | ((addr_low & 0xFC) >> 2);
   long addr = (addr_high << 6) | (addr_low >> 2);
   
   return addr;
@@ -158,32 +166,23 @@ long get_addr(){
 
 void trace_mode(){
   long a12_state;
+  long addr;
   long test_address = 0xFFFC;
+
+  //Put NOOP out the address lines.
+  GPIOPinWrite(GPIO_PORTB_BASE, D0|D1|D2|D3|D4|D5|D6|D7, 0xEA);
+
+  //Turn on the blue LED to show we're in trace mode.
+  GPIOPinWrite(GPIO_PORTF_BASE, BLUE_LED, BLUE_LED);
   
   //Spin while A12 is low
   do{
     a12_state = GPIOPinRead(GPIO_PORTC_BASE, A12);
+    addr = get_addr();
   }while((a12_state & A12) == 0);
 
-  //Get the first address
-  long addr = get_addr();
-
-  //Turn on the blue LED to show we're in trace mode.
-  GPIOPinWrite(GPIO_PORTF_BASE, BLUE_LED, BLUE_LED);
-
-  //And now we go address hunting.
-  if((addr & 0x7F) > (test_address & 0x7F)){
-    //Address is greater
-    GPIOPinWrite(GPIO_PORTF_BASE, GREEN_LED, GREEN_LED | BLUE_LED);
-  }
-  else if((addr & 0x7F) == (test_address & 0x7F)){
-    //Keep the blue LED on
-    GPIOPinWrite(GPIO_PORTF_BASE, BLUE_LED, BLUE_LED);
-  }
-  else{
-    //Or it's lower
-    GPIOPinWrite(GPIO_PORTF_BASE, RED_LED, RED_LED | BLUE_LED);
-  }
+  //Turn the LED purple to show we got an address.
+  GPIOPinWrite(GPIO_PORTF_BASE, RED_LED, RED_LED | BLUE_LED);
 
   //Wait for a half-second
   SysCtlDelay(80000000 / 3 / 2);
@@ -206,7 +205,7 @@ void debug_mode(){
     //Grab the state of A12
     long a12_state = GPIOPinRead(GPIO_PORTC_BASE, A12);
 
-    //Grab the address.
+    //Grab the address.  We sort of hope that all the bits are from the same address.
     long addr = get_addr();
 
     //Mask the address
@@ -256,36 +255,26 @@ int main(){
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
   GPIOPinTypeGPIOInput(GPIO_PORTC_BASE, A12);
 
-  //spin while A12 is low
-  
-  long a12_state = 0;
-  long count = 0;
-
-  do{
-    a12_state = GPIOPinRead(GPIO_PORTC_BASE, A12);
-    count++;
-  }while((a12_state & A12) == 0);
-  
-  //long addr = get_addr();
-
   //Set up the LEDs on PORTF
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
   GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, RED_LED|BLUE_LED|GREEN_LED);
+  
+  //long addr = get_addr();
 
-  for(;;){
-    //blink_long(addr);
+  /* for(;;){ */
+  /*   //blink_long(addr); */
 
-    //Wait for a half-second
-    //SysCtlDelay(80000000 / 3 / 2);
+  /*   //Wait for a half-second */
+  /*   //SysCtlDelay(80000000 / 3 / 2); */
     
-    blink_long(count);
+  /*   blink_long(count); */
 
-    //Wait for a half-second
-    SysCtlDelay(80000000 / 3 / 2);
-  }
+  /*   //Wait for a half-second */
+  /*   SysCtlDelay(80000000 / 3 / 2); */
+  /* } */
 
   //Don't bother setting up the switches, just go into trace mode.
-  trace_mode();
+  //  trace_mode();
 
   //
   // Unlock PF0 so we can change it to a GPIO input
@@ -324,13 +313,14 @@ int main(){
   GPIOPinWrite(GPIO_PORTF_BASE, GREEN_LED, (switch_states | GREEN_LED));
 
   //Otherwise we run forever
-  for(;;){
+  for(;;){    
+    //Get the value of A12
     long a12_state = GPIOPinRead(GPIO_PORTC_BASE, A12);
-    long addr = get_addr();
 
     /*Only return a result if a12 is high*/
     if((a12_state & A12) == A12){
       //Get the value of the byte at that location in the program ROM
+      long addr = get_addr();
       unsigned char data = get_byte(addr);
 
       //Stuff the result down the data lines

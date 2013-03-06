@@ -56,7 +56,7 @@ CFLAGS += -DPART_LM4F120H5QR
 #Used in driverlib to determine what is loaded in rom.
 CFLAGS += -DTARGET_IS_BLIZZARD_RA1
 
-CFLAGS += -S
+#CFLAGS += -S
 
 #Path to Linker Script
 LDFLAGS += -T ${NAME}.ld
