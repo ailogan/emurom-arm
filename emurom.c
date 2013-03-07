@@ -50,9 +50,10 @@
     - The A0 version of this chip has serious problems at speed.  Check the H/W revision.
     - Switching clocks imposes a significant delay, but apparently we can't avoid this if we want to use the PLL.
 
-    - 
+    - The solder joint on my adaptor for PE3 is bad.
 */
 
+#include "inc/lm4f120h5qr.h"  //Ties it to the specific board I have, but reading / writing from memory addresses should be quicker than going through the ROM routines.
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_gpio.h"
@@ -167,7 +168,7 @@ long get_addr(){
 void trace_mode(){
   long a12_state;
   long addr;
-  long test_address = 0xFFFC;
+  //  long test_address = 0xFFFC;
 
   //Put NOOP out the address lines.
   GPIOPinWrite(GPIO_PORTB_BASE, D0|D1|D2|D3|D4|D5|D6|D7, 0xEA);
@@ -239,43 +240,31 @@ int main(){
 
   //Data out on PORTB
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-  GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, D0|D1|D2|D3|D4|D5|D6|D7);
+  GPIO_PORTB_DIR_R = 0xFF;
+  GPIO_PORTB_DEN_R = 0xFF;
 
   //Address in on PORTA, PORTE and PORTC
 
   //A0-A5 are PORTA2-PORTA7
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-  GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, A0|A1|A2|A3|A4|A5);
+  GPIO_PORTA_DIR_R = 0x00;
+  GPIO_PORTA_DEN_R = 0xFC;
 
   //A6-A11 are PORTE0-PORTE5
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
-  GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, A6|A7|A8|A9|A10|A11);
+  GPIO_PORTE_DIR_R = 0x00;
+  GPIO_PORTE_DEN_R = 0x3F;
 
   //A12 is PORTC4
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-  GPIOPinTypeGPIOInput(GPIO_PORTC_BASE, A12);
+  GPIO_PORTC_DIR_R = 0x00;
+  GPIO_PORTC_DEN_R = 0xFF;
 
   //Set up the LEDs on PORTF
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, RED_LED|BLUE_LED|GREEN_LED);
+  GPIO_PORTF_DIR_R = 0x0E;
+  GPIO_PORTF_DEN_R = 0x0E;
   
-  //long addr = get_addr();
-
-  /* for(;;){ */
-  /*   //blink_long(addr); */
-
-  /*   //Wait for a half-second */
-  /*   //SysCtlDelay(80000000 / 3 / 2); */
-    
-  /*   blink_long(count); */
-
-  /*   //Wait for a half-second */
-  /*   SysCtlDelay(80000000 / 3 / 2); */
-  /* } */
-
-  //Don't bother setting up the switches, just go into trace mode.
-  //  trace_mode();
-
   //
   // Unlock PF0 so we can change it to a GPIO input
   // Once we have enabled (unlocked) the commit register then re-lock it
@@ -297,7 +286,7 @@ int main(){
   GPIOPadConfigSet(GPIO_PORTF_BASE, USR_SW1 | USR_SW2, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
   
   //Get the status of the switches as we start up
-  long switch_states = GPIOPinRead(GPIO_PORTF_BASE, USR_SW1|USR_SW2);
+  unsigned char switch_states = GPIO_PORTF_DATA_R & (USR_SW1|USR_SW2);
   
   //According to the schematic the switches are active-low, so go into debug mode if the switch is pushed.
   if((switch_states & USR_SW1) == 0){ //Mask out the bit we care about.
@@ -310,37 +299,24 @@ int main(){
   } 
 
   //Show that we're in emulator mode.
-  GPIOPinWrite(GPIO_PORTF_BASE, GREEN_LED, (switch_states | GREEN_LED));
+  GPIO_PORTF_DATA_R = (switch_states | GREEN_LED);
 
   //Otherwise we run forever
   for(;;){    
-    //Get the value of A12
-    long a12_state = GPIOPinRead(GPIO_PORTC_BASE, A12);
+    //Spin until A12 is high
+    while ((GPIO_PORTC_DATA_R & A12) == 0);
 
-    /*Only return a result if a12 is high*/
-    if((a12_state & A12) == A12){
-      //Get the value of the byte at that location in the program ROM
-      long addr = get_addr();
-      unsigned char data = get_byte(addr);
-
-      //Stuff the result down the data lines
-      GPIOPinWrite(GPIO_PORTB_BASE, D0|D1|D2|D3|D4|D5|D6|D7, data);
-    }
-
-
-    /* /\*This is the algorithm proposed by the Harmony Cart developer: */
-    /*   http://www.atariage.com/forums/blog/107/entry-6412-perfect-harmony/ *\/ */
-    
-    /* long new_addr = 0; */
-    /* do{ */
-    /*   new_addr = get_addr(); */
-    /* }while(addr == new_addr); */
-
-    /*
+    //High bits are PIN_0-PIN_5 on PORTE,
+    //Low  bits are PIN_2-PIN_7 on PORTA
     do{
-      //Wait until A12 goes low
-      a12_state = GPIOPinRead(GPIO_PORTC_BASE, A12);
-    }while((a12_state & A12) == A12);
-    */
+      //This is test mode, so we're not so concerned with timing.
+      //      GPIO_PORTF_DATA_R = (switch_states | RED_LED);
+
+      unsigned long addr = (((GPIO_PORTE_DATA_R & (A6|A7|A8|A9|A10|A11)) << 6) | ((GPIO_PORTA_DATA_R & (A0|A1|A2|A3|A4 |A5)) >> 2));
+      GPIO_PORTB_DATA_R = get_byte(addr);
+
+    }while((GPIO_PORTC_DATA_R & A12) == A12); //Keep returning values until A12 is low.
+
+    //    GPIO_PORTF_DATA_R = (switch_states | GREEN_LED);
   }
 }
