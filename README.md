@@ -4,9 +4,13 @@ Atari 2600 cartridge emulator targeting Texas Instrument's Stellaris Launchpad k
 
 Requires the StellarisWare® Driver Library Standalone Package: http://www.ti.com/tool/sw-drl
 
+Requires the arm-none-eabi-gcc toolchain: https://launchpad.net/gcc-arm-embedded/+download
+
 ## Building
 
 Unpack the StellarisWare® package into ../stellarisware
+
+Install gcc-arm-embedded.
 
 Run "make"
 
